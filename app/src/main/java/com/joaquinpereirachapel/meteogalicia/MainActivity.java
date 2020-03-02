@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private void actualizarEstacion() {
     }
-    
+
     public static SQLiteDatabase getDataBase() {
         return dataBase;
     }
