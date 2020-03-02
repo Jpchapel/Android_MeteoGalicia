@@ -1,0 +1,24 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="pmdm.quique.meteogalicia.MainActivity">
+    <item
+        android:id="@+id/imActualizar"
+        android:icon="@drawable/actualizar"
+        android:orderInCategory="100"
+        android:title="@string/miActualizar"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/imEstacionFavorita"
+        android:icon="@drawable/favorito"
+        android:orderInCategory="100"
+        android:title="Estacion Favorita"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/imPrediccionCurtoPrazo"
+        android:orderInCategory="100"
+        android:title="Prediccion Curto Prazo"
+        app:showAsAction="never" />
+</menu>

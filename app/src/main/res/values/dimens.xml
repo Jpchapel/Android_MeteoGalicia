@@ -1,0 +1,13 @@
+<resources>
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="rotulo_tamano_letra">18sp</dimen>
+    <dimen name="valor_tamano_texto">22sp</dimen>
+    <dimen name="separacion_vertical_grupo">6dp</dimen>
+    <dimen name="icona_estado_ancho">30dp</dimen>
+    <dimen name="icona_estado_alto">30dp</dimen>
+    <dimen name="rotulo_marxe_dereito">10dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Meteogalicia</string>
+    <string name="horaUTC">Hora UTC</string>
+    <string name="horaLocal">Hora Local</string>
+    <string name="temperatura">Temperatura</string>
+    <string name="sensacionTermica">Sensación térmica</string>
+    <string name="estadoCielo">Estado del cielo</string>
+    <string name="tendenciaTemperatura">Tendencia temperatura</string>
+    <string name="viento">Viento</string>
+    <string name="miActualizar">Actualizar</string>
+    <string name="btn_dia_anterior_rotulo">Día anterior</string>
+    <string name="btn_dia_siguiente_rotulo">Día siguiente</string>
+    <string name="fecha">Fecha</string>
+    <string name="temperaturas">Temperaturas</string>
+    <string name="maxima">Máxima</string>
+    <string name="minima">Mínima</string>
+
+</resources>
