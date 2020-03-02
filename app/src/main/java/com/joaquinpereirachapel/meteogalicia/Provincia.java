@@ -4,24 +4,24 @@ import android.database.Cursor;
 
 public class Provincia {
 	private static String[] columnas = new String[] {"_id", "nome"};
-	private static String taboa = "provincia";
+	private static String tabla = "provincia";
 	private long id;
-	private String nome;
+	private String nombre;
 
-	public Provincia (long id, String nome) {
+	public Provincia (long id, String nombre) {
 		this.id = id;
-		this.nome = nome;
+		this.nombre = nombre;
 	}
 
 	public static Cursor getAllCursor() {
-		return MainActivity.getDataBase().query(taboa, columnas, null, null, null, null, null);
+		return MainActivity.getDataBase().query(tabla, columnas, null, null, null, null, null);
 	}
 
 	public long getId() {
 		return id;
 	}
 
-	public String getNome() {
-		return nome;
+	public String getNombre() {
+		return nombre;
 	}
 }

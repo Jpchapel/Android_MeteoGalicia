@@ -7,14 +7,14 @@ public class Estacion {
 	private static String[] columnas = new String[] {"_id", "nome", "concello", "idprovincia"};
 	private static String tabla = "estacion";
 	private long id;
-	private String nome;
-	private String concello;
+	private String nombre;
+	private String ayuntamiento;
 	private long idProvincia;
 
-	public Estacion(long id, String nome, String concello, long idProvincia) {
+	public Estacion(long id, String nombre, String ayuntamiento, long idProvincia) {
 		this.id = id;
-		this.nome = nome;
-		this.concello = concello;
+		this.nombre = nombre;
+		this.ayuntamiento = ayuntamiento;
 		this.idProvincia = idProvincia;
 	}
 
@@ -22,12 +22,12 @@ public class Estacion {
 		return id;
 	}
 
-	public String getNome() {
-		return nome;
+	public String getNombre() {
+		return nombre;
 	}
 
-	public String getConcello() {
-		return concello;
+	public String getAyuntamiento() {
+		return ayuntamiento;
 	}
 
 	public long getIdProvincia() {
@@ -35,6 +35,6 @@ public class Estacion {
 	}
 
 	public static Cursor buscarEstacionPorProvinciaCursor(long idProvincia) {
-		return MainActivity.getDataBase().query(tabla, columnas, "idprovincia = ?", new String[]{String.valueOf(idProvincia)}, null, null, "nome");
+		return MainActivity.getDataBase().query(tabla, columnas, "idprovincia = ?", new String[]{String.valueOf(idProvincia)}, null, null, "nombre");
 	}
 }
