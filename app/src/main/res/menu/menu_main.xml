@@ -3,21 +3,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="pmdm.quique.meteogalicia.MainActivity">
     <item
-        android:id="@+id/imActualizar"
+        android:id="@+id/actualizar"
         android:icon="@drawable/actualizar"
         android:orderInCategory="100"
         android:title="@string/miActualizar"
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/imEstacionFavorita"
+        android:id="@+id/estacionFavorita"
         android:icon="@drawable/favorito"
         android:orderInCategory="100"
         android:title="Estacion Favorita"
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/imPrediccionCurtoPrazo"
+        android:id="@+id/prediccionCurtoPrazo"
         android:orderInCategory="100"
         android:title="Prediccion Curto Prazo"
         app:showAsAction="never" />
