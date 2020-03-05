@@ -6,7 +6,7 @@ import java.net.URL;
 public class ServicioURL {
     private static String urlBase1 = "http://servizos.meteogalicia.gal/";
     private static String urlBase2 = "http://www.meteogalicia.es/datosred/infoweb/meteo/imagenes/";
-    private static String urlBase3 = "http://172.16.0.56/dam2_pmdm/meteo/";
+    private static String urlBase3 = "http://127.0.0.1/";
 
     public static URL estadoEstacion(long idEstacion) {
         String cadenaURL = urlBase1 + "rss/observacion/rssEstacionsEstActual.action?idEst=" + idEstacion;
