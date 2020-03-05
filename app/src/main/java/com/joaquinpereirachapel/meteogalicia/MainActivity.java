@@ -3,6 +3,8 @@ package com.joaquinpereirachapel.meteogalicia;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -19,10 +21,19 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.net.URL;
+import java.util.Date;
+
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, TareaDescargaXML.Cliente {
 
     private static SQLiteDatabase dataBase;
     private static final int DESCARGA_ESTADO_ACTUAL_ESTACION = 1;
@@ -61,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         });
 
         MeteoDBOpenHelper openHelper = new MeteoDBOpenHelper(this);
-        if(openHelper == null){
+        if(dataBase == null){
             dataBase = openHelper.getWritableDatabase();
         }
 
@@ -95,9 +106,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, cursor, from, to, 0);
         provincias.setAdapter(simpleCursorAdapter);
+
+        long idProvinciaFavorita = sharedPreferences.getLong("idProvinciaFavorita", -1);
+
+        if(idProvinciaFavorita != -1){
+            for (int i = 0; i < provincias.getCount(); i++) {
+                if(provincias.getItemAtPosition(i).equals(idProvinciaFavorita)){
+                    provincias.setSelection(i);
+                    break;
+                }
+            }
+        }
     }
 
     private void actualizarEstacion() {
+        long ultimaActualizacion = sharedPreferences.getLong("fechaUltimaActualizacion", 0);
+
+        long tiempoTranscurrido = new Date().getTime() / 1000 - ultimaActualizacion;
+
+        if (tiempoTranscurrido > TIEMPO_MINIMO_ENTRE_ACTUALIZACIONES) {
+            String fechaUltimaActualizacionAMD = Util.fechaAnoMesDia(new Date(ultimaActualizacion * 1000));
+
+            TareaDescargaXML tdx = new TareaDescargaXML(this, DESCARGA_NUEVAS_ESTACIONES);
+            tdx.execute(ServicioURL.nuevasEstaciones(fechaUltimaActualizacionAMD));
+        }
     }
 
     public static SQLiteDatabase getDataBase() {
@@ -134,5 +166,181 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
+    }
+
+    public void recibirImagen(Bitmap bmpResultado, int tipoImagen, String nombre) {
+         if (bmpResultado == null) {
+            return;
+        }
+
+        File carpetaDestino = carpetaCacheTemperatura();
+
+        if (tipoImagen == ICONO_CIELO) {
+            carpetaDestino = carpetaCacheCielo();
+        } else if (tipoImagen == ICONO_VIENTO) {
+            carpetaDestino = carpetaCacheViento();
+        }
+
+        if (!nombre.equals("-9999")) {
+            File ficheroDestinoImagen = new File(carpetaDestino, nombre + ".png");
+
+            try {
+                bmpResultado.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(ficheroDestinoImagen));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void recibirDocumento(Document resultado, int tipoDescarga) {
+        if (resultado == null) {
+            Toast.makeText(this, "Problemas de conexion", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (tipoDescarga == DESCARGA_ESTADO_ACTUAL_ESTACION) {
+            procesarEstadoEstacion(resultado);
+        } else if (tipoDescarga == DESCARGA_NUEVAS_ESTACIONES) {
+            procesarNuevasEstaciones(resultado);
+        }
+    }
+
+    private void procesarEstadoEstacion(Document resultado) {
+        //Buscar el elemento raiz
+        Element raiz = resultado.getDocumentElement();
+
+        cargarEtiqueta(raiz, "EstacionsEstActual:dataUTC", horaLocal);
+        cargarEtiqueta(raiz, "EstacionsEstActual:dataLocal", horaLocal);
+        cargarEtiqueta(raiz, "EstacionsEstActual:valTemperatura", temperatura);
+        cargarEtiqueta(raiz, "EstacionsEstActual:valSensTermica", sensacionTermica);
+
+        cargarIcono(raiz, "EstacionsEstActual:icoCeo", estadoCielo);
+        cargarIcono(raiz, "EstacionsEstActual:icoVento", viento);
+        cargarIcono(raiz, "EstacionsEstActual:icoTemperatura", tendenciaTemperatura);
+    }
+    private void cargarEtiqueta(Element raiz, String etiquetaXML, TextView tv) {
+        nodeList = raiz.getElementsByTagName(etiquetaXML);
+        //Comprobamos que esncontramos exactamente un elemento
+        if (nodeList.getLength() == 1) {
+            tv.setText(nodeList.item(0).getTextContent());
+        } else {
+            tv.setText("-");
+        }
+    }
+
+    private void cargarIcono(Element raiz, String etiquetaXML, ImageView imageView) {
+        nodeList = raiz.getElementsByTagName(etiquetaXML);
+
+        imageView.setImageResource(R.drawable.guion);
+
+        if (nodeList.getLength() == 1) {
+            String nombreIcono = nodeList.item(0).getTextContent();
+
+            if (nombreIcono.equals("-9999")) {
+                return;
+            }
+
+            if (imageView.getId() == estadoCielo.getId()) {
+                lanzarTareaDescargaImagen(imageView, nombreIcono, carpetaCacheCielo(), ICONO_CIELO, ServicioURL.iconoEstadoCielo(nombreIcono));
+            } else if (imageView.getId() == tendenciaTemperatura.getId()) {
+                lanzarTareaDescargaImagen(imageView, nombreIcono, carpetaCacheTemperatura(), ICONO_TEMPERATURA, ServicioURL.iconoTemperatura(nombreIcono));
+            } else if (imageView.getId() == viento.getId()) {
+                lanzarTareaDescargaImagen(imageView, nombreIcono, carpetaCacheViento(), ICONO_VIENTO, ServicioURL.iconoViento(nombreIcono));
+            }
+        }
+    }
+
+    private void lanzarTareaDescargaImagen(ImageView iv, String nomeIcona, File file, int tipoIcono, URL direccionURL) {
+        File directorioIcono = new File(file, nomeIcona + ".png");
+
+        if (directorioIcono.exists()) {
+            Bitmap icono = BitmapFactory.decodeFile(directorioIcono.getAbsolutePath());
+            iv.setImageBitmap(icono);
+        } else {
+            TareaDescargaImagen tdi = new TareaDescargaImagen(this, tipoIcono, nomeIcona, iv);
+            tdi.execute(direccionURL);
+        }
+    }
+
+    private void procesarNuevasEstaciones(Document resultado) {
+        Estacion.crearDesdeXML(resultado);
+
+        //Guardamos en SharedPreference la hora actual, como hora de ultima actualizacion
+        sharedPreferences.edit().putLong("dataUltimaActualizacion", new Date().getTime() / 1000).commit();
+
+        llenarEstaciones(provincias.getSelectedItemId());
+    }
+
+    private void llenarEstaciones(long idProvincia) {
+        Cursor c = Estacion.buscarEstacionPorProvinciaCursor(idProvincia);
+
+        String[] from = {"nome"};
+        int[] to = {android.R.id.text1};
+
+        SimpleCursorAdapter sca = (SimpleCursorAdapter) estaciones.getAdapter();
+        if (sca == null) {
+            sca = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, c, from, to, 0);
+            estaciones.setAdapter(sca);
+        } else {
+            sca.swapCursor(c).close();
+        }
+
+        long idEstacionFavorita = sharedPreferences.getLong("idEstacionFavorita", -1);
+        if (idEstacionFavorita != -1) {
+            for (int i = 0; i < estaciones.getCount(); i++) {
+                if (estaciones.getItemIdAtPosition(i) == idEstacionFavorita) {
+                    estaciones.setSelection(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    public File carpetaCacheCielo() {
+        File raizCache = getDir(CARPETA_CACHE_ICONOS, MODE_APPEND);
+
+        if (!raizCache.exists()) {
+            raizCache.mkdir();
+        }
+
+        File carpetaCacheCielo = new File(raizCache, "ceo");
+
+        if (!carpetaCacheCielo.exists()) {
+            carpetaCacheCielo.mkdir();
+        }
+
+        return carpetaCacheCielo;
+    }
+
+    public File carpetaCacheViento() {
+        File raizCache = getDir(CARPETA_CACHE_ICONOS, MODE_APPEND);
+
+        if (!raizCache.exists()) {
+            raizCache.mkdir();
+        }
+
+        File carpetaCacheViento = new File(raizCache, "vento");
+
+        if (!carpetaCacheViento.exists()) {
+            carpetaCacheViento.mkdir();
+        }
+
+        return carpetaCacheViento;
+    }
+
+    public File carpetaCacheTemperatura() {
+        File raizCache = getDir(CARPETA_CACHE_ICONOS, MODE_APPEND);
+
+        if (!raizCache.exists()) {
+            raizCache.mkdir();
+        }
+
+        File carpetaCacheTemperatura = new File(raizCache, "temperatura");
+
+        if (!carpetaCacheTemperatura.exists()) {
+            carpetaCacheTemperatura.mkdir();
+        }
+
+        return carpetaCacheTemperatura;
     }
 }
