@@ -38,8 +38,8 @@ public class ServicioURL {
         return cadena2URL(cadenaURL);
     }
 
-    public static URL concellos() {
-        String cadenaURL = urlBase3 + "concellos.php";
+    public static URL ayuntamientos() {
+        String cadenaURL = urlBase3 + "cocellos.php";
 
         return cadena2URL(cadenaURL);
     }

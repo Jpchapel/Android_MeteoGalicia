@@ -1,5 +1,6 @@
 package com.joaquinpereirachapel.meteogalicia;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -119,6 +120,31 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
+    private void llenarEstaciones(long idProvincia) {
+        Cursor c = Estacion.buscarEstacionPorProvinciaCursor(idProvincia);
+
+        String[] from = {"nome"};
+        int[] to = {android.R.id.text1};
+
+        SimpleCursorAdapter sca = (SimpleCursorAdapter) estaciones.getAdapter();
+        if (sca == null) {
+            sca = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, c, from, to, 0);
+            estaciones.setAdapter(sca);
+        } else {
+            sca.swapCursor(c).close();
+        }
+
+        long idEstacionFavorita = sharedPreferences.getLong("idEstacionFavorita", -1);
+        if (idEstacionFavorita != -1) {
+            for (int i = 0; i < estaciones.getCount(); i++) {
+                if (estaciones.getItemIdAtPosition(i) == idEstacionFavorita) {
+                    estaciones.setSelection(i);
+                    break;
+                }
+            }
+        }
+    }
+
     private void actualizarEstacion() {
         long ultimaActualizacion = sharedPreferences.getLong("fechaUltimaActualizacion", 0);
 
@@ -134,6 +160,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public static SQLiteDatabase getDataBase() {
         return dataBase;
+    }
+
+    public static SharedPreferences getSharedPreferences() {
+        return sharedPreferences;
     }
 
     @Override
@@ -152,20 +182,60 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.actualizar) {
+            descargarEstadoActualEstacion(estaciones.getSelectedItemId());
+            return true;
+        }else if(id == R.id.estacionFavorita){
+            guardarEstacionFavorita();
+            return true;
+        }else if(id == R.id.prediccionCurtoPrazo){
+            Intent intent = new Intent(this, PrediccionCortoPlazoActivity.class);
+            startActivity(intent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+    private void guardarEstacionFavorita() {
+        long idEstacionFavorita = estaciones.getSelectedItemId();
+        long idProvincia = provincias.getSelectedItemId();
 
+        sharedPreferences.edit().putLong("idEstacionFavorita", idEstacionFavorita).putLong("idProviciaFavorita", idProvincia).commit();
+
+        Toast.makeText(this, "Se ha marcado como favorita la estacion actual", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+        if(adapterView.getId() == R.id.provincias){
+            llenarEstaciones(id);
+        }else if(adapterView.getId() == R.id.estaciones){
+            descargarEstadoActualEstacion(id);
+        }
+    }
+
+    private void descargarEstadoActualEstacion(long idEstacion) {
+        TareaDescargaXML tdx = new TareaDescargaXML(this, DESCARGA_ESTADO_ACTUAL_ESTACION);
+        tdx.execute(ServicioURL.estadoEstacion(idEstacion));
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        Cursor cursor = ((SimpleCursorAdapter) provincias.getAdapter()).getCursor();
+        if (cursor != null) {
+            cursor.close();
+        }
+        cursor = ((SimpleCursorAdapter) estaciones.getAdapter()).getCursor();
+        if (cursor != null) {
+            cursor.close();
+        }
     }
 
     public void recibirImagen(Bitmap bmpResultado, int tipoImagen, String nombre) {
@@ -206,7 +276,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private void procesarEstadoEstacion(Document resultado) {
-        //Buscar el elemento raiz
         Element raiz = resultado.getDocumentElement();
 
         cargarEtiqueta(raiz, "EstacionsEstActual:dataUTC", horaLocal);
@@ -218,9 +287,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         cargarIcono(raiz, "EstacionsEstActual:icoVento", viento);
         cargarIcono(raiz, "EstacionsEstActual:icoTemperatura", tendenciaTemperatura);
     }
+
     private void cargarEtiqueta(Element raiz, String etiquetaXML, TextView tv) {
         nodeList = raiz.getElementsByTagName(etiquetaXML);
-        //Comprobamos que esncontramos exactamente un elemento
+
         if (nodeList.getLength() == 1) {
             tv.setText(nodeList.item(0).getTextContent());
         } else {
@@ -265,35 +335,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private void procesarNuevasEstaciones(Document resultado) {
         Estacion.crearDesdeXML(resultado);
 
-        //Guardamos en SharedPreference la hora actual, como hora de ultima actualizacion
         sharedPreferences.edit().putLong("dataUltimaActualizacion", new Date().getTime() / 1000).commit();
 
         llenarEstaciones(provincias.getSelectedItemId());
-    }
-
-    private void llenarEstaciones(long idProvincia) {
-        Cursor c = Estacion.buscarEstacionPorProvinciaCursor(idProvincia);
-
-        String[] from = {"nome"};
-        int[] to = {android.R.id.text1};
-
-        SimpleCursorAdapter sca = (SimpleCursorAdapter) estaciones.getAdapter();
-        if (sca == null) {
-            sca = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, c, from, to, 0);
-            estaciones.setAdapter(sca);
-        } else {
-            sca.swapCursor(c).close();
-        }
-
-        long idEstacionFavorita = sharedPreferences.getLong("idEstacionFavorita", -1);
-        if (idEstacionFavorita != -1) {
-            for (int i = 0; i < estaciones.getCount(); i++) {
-                if (estaciones.getItemIdAtPosition(i) == idEstacionFavorita) {
-                    estaciones.setSelection(i);
-                    break;
-                }
-            }
-        }
     }
 
     public File carpetaCacheCielo() {

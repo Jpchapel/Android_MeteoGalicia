@@ -70,4 +70,8 @@ public class Estacion {
 
 		MainActivity.getDataBase().insert(tabla, null, cv);
 	}
+
+	public static void borrarTodas() {
+		MainActivity.getDataBase().delete(tabla, null, null);
+	}
 }

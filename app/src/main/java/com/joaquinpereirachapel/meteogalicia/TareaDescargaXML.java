@@ -49,6 +49,6 @@ public class TareaDescargaXML extends AsyncTask<URL, Void, Document>{
     }
 
     public interface Cliente{
-        public void recibirDocumento(Document resultado, int tipoDescarga);
+        void recibirDocumento(Document resultado, int tipoDescarga);
     }
 }
